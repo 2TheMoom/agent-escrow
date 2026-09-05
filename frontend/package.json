@@ -1,7 +1,7 @@
 {
-  "name": "genlayer-football-betting",
+  "name": "agent-escrow-frontend",
   "version": "1.0.0",
-  "description": "GenLayer Football Betting - AI-powered prediction betting on GenLayer blockchain.",
+  "description": "GenLayer escrow for agent-to-agent verified data delivery.",
   "main": "index.js",
   "scripts": {
     "dev": "next dev",

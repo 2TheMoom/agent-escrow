@@ -1,33 +1,30 @@
 /**
- * TypeScript types for GenLayer Football Betting contract
+ * TypeScript types for the GenLayer AgentEscrow contract
  */
 
-export interface Bet {
+export type TaskStatus = "open" | "submitted" | "accepted" | "rejected" | "cancelled";
+
+export interface Task {
   id: string;
-  game_date: string;
-  team1: string;
-  team2: string;
-  predicted_winner: string;
-  has_resolved: boolean;
-  real_winner?: string;
-  real_score?: string;
-  resolution_url?: string;
-  owner: string;
+  requester: string;
+  worker: string;
+  source_url: string;
+  fact_description: string;
+  amount: string;
+  status: TaskStatus;
+  reported_value: string;
+  verdict_reasoning: string;
 }
 
-export interface LeaderboardEntry {
-  address: string;
-  points: number;
-}
+export const ALLOWED_SOURCE_DOMAINS = [
+  "api.coingecko.com",
+  "api.coinbase.com",
+  "etherscan.io",
+];
 
 export interface TransactionReceipt {
   status: string;
   hash: string;
   blockNumber?: number;
   [key: string]: any;
-}
-
-export interface BetFilters {
-  resolved?: boolean;
-  owner?: string;
 }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { User, LogOut, AlertCircle, ExternalLink } from "lucide-react";
 import { useWallet } from "@/lib/genlayer/wallet";
-import { usePlayerPoints } from "@/lib/hooks/useFootballBets";
+import { useTasksByWorker } from "@/lib/hooks/useAgentEscrow";
 import { success, error, userRejected } from "@/lib/utils/toast";
 import { AddressDisplay } from "./AddressDisplay";
 import { Button } from "./ui/button";
@@ -31,7 +31,7 @@ export function AccountPanel() {
     switchWalletAccount,
   } = useWallet();
 
-  const { data: points = 0 } = usePlayerPoints(address);
+  const { data: workerTasks = [] } = useTasksByWorker(address);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [connectionError, setConnectionError] = useState("");
@@ -108,7 +108,7 @@ export function AccountPanel() {
               Connect to GenLayer
             </DialogTitle>
             <DialogDescription>
-              Connect your MetaMask wallet to start betting
+              Connect your MetaMask wallet to create or complete tasks
             </DialogDescription>
           </DialogHeader>
 
@@ -189,8 +189,8 @@ export function AccountPanel() {
           </div>
           <div className="h-4 w-px bg-white/10" />
           <div className="flex items-center gap-1">
-            <span className="text-sm font-semibold text-accent">{points}</span>
-            <span className="text-xs text-muted-foreground">pts</span>
+            <span className="text-sm font-semibold text-accent">{workerTasks.length}</span>
+            <span className="text-xs text-muted-foreground">tasks as worker</span>
           </div>
         </div>
 
@@ -218,8 +218,8 @@ export function AccountPanel() {
           </div>
 
           <div className="brand-card p-4 space-y-2">
-            <p className="text-sm text-muted-foreground">Your Points</p>
-            <p className="text-2xl font-bold text-accent">{points}</p>
+            <p className="text-sm text-muted-foreground">Tasks as Worker</p>
+            <p className="text-2xl font-bold text-accent">{workerTasks.length}</p>
           </div>
 
           <div className="brand-card p-4 space-y-2">
