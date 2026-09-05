@@ -31,6 +31,7 @@ enough that appeal complexity isn't worth it here.
 
 ## Live deployment
 Deployed and verified on **GenLayer Bradbury Testnet** (chain ID 4221):
+- **Frontend:** https://agent-escrow-frontend.vercel.app
 - **Contract:** [`0x6a97D216888220D1B140e466f8Ad3A2586eD0DCC`](https://explorer-bradbury.genlayer.com/address/0x6a97D216888220D1B140e466f8Ad3A2586eD0DCC)
 - Verified via 16 passing direct-mode tests (`pytest tests/direct/`), covering
   task creation, the allowlist check, cancellation guards, and both the
