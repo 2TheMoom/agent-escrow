@@ -1,6 +1,7 @@
-# GenLayer Football Market
+# AgentEscrow Frontend
 
-Next.js frontend for GenLayer Football Market - AI-powered football match predictions on GenLayer blockchain.
+Next.js frontend for AgentEscrow - a bonded manifest register for
+agent-to-agent verified data delivery on GenLayer.
 
 ## Setup
 
@@ -22,7 +23,7 @@ cp .env.example .env
 ```
 
 3. Configure environment variables:
-   - `NEXT_PUBLIC_CONTRACT_ADDRESS` - GenLayer Football Betting contract address
+   - `NEXT_PUBLIC_CONTRACT_ADDRESS` - AgentEscrow contract address
    - `NEXT_PUBLIC_STUDIO_URL` - GenLayer Studio URL (default: https://studio.genlayer.com/api)
 
 ## Development
@@ -57,7 +58,7 @@ npm start
 
 - **Next.js 15** - React framework with App Router
 - **TypeScript** - Type safety
-- **Tailwind CSS v4** - Styling with custom glass-morphism theme
+- **Tailwind CSS v4** - Styling, with a custom "Bonded Manifest Register" theme
 - **genlayer-js** - GenLayer blockchain SDK
 - **TanStack Query (React Query)** - Data fetching and caching
 - **Radix UI** - Accessible component primitives
@@ -65,20 +66,16 @@ npm start
 
 ## Wallet Management
 
-The app uses GenLayer's account system:
-- **Create Account**: Generate a new private key
-- **Import Account**: Import existing private key
-- **Export Account**: Export your private key (secured)
-- **Disconnect**: Clear stored account data
-
-Accounts are stored in browser's localStorage for development convenience.
+The app connects via MetaMask to GenLayer's Bradbury testnet.
 
 ## Features
 
-- **Create Bets**: Create football match predictions with team names, game date, and predicted winner (Team 1, Team 2, or Draw)
-- **View Bets**: Real-time bet table with match details, predictions, status, and owners
-- **Resolve Bets**: Bet owners can resolve matches using GenLayer's AI to verify actual results
-- **Leaderboard**: Track top players by points earned from correct predictions
-- **Player Stats**: View your points and ranking in the community
-- **Glass-morphism UI**: Premium dark theme with OKLCH colors, backdrop blur effects, and smooth animations
-- **Real-time Updates**: Automatic data fetching with 3-second polling intervals via TanStack Query
+- **File a Manifest**: Escrow a bond for a named worker agent to fetch and
+  declare a fact from an authorized port (an allowlisted neutral source).
+- **The Register**: A live ledger of every manifest filed - open, submitted,
+  cleared, held, or withdrawn - with the validators' reasoning shown inline
+  for resolved manifests.
+- **File a Declaration**: The assigned worker reports the value they found.
+- **Inspect & Clear**: Anyone can trigger adjudication once a declaration is
+  filed; GenLayer validators independently re-check the source and clear or
+  hold the bond accordingly.

@@ -102,7 +102,7 @@ export function AccountPanel() {
             Connect Wallet
           </Button>
         </DialogTrigger>
-        <DialogContent className="brand-card border-2">
+        <DialogContent className="ledger-card border-2">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">
               Connect to GenLayer
@@ -181,27 +181,16 @@ export function AccountPanel() {
   // Connected state
   return (
     <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-      <div className="flex items-center gap-4">
-        <div className="brand-card px-4 py-2 flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <User className="w-4 h-4 text-accent" />
+      <DialogTrigger asChild>
+        <button className="ledger-card px-3 py-1.5 flex items-center gap-2.5 hover:border-primary/50 transition-colors">
+          <span className="w-4 h-4 rounded-full border-[1.5px] border-primary text-primary flex items-center justify-center text-[9px] leading-none shrink-0">✓</span>
+          <span className="font-mono text-xs">
             <AddressDisplay address={address} maxLength={12} />
-          </div>
-          <div className="h-4 w-px bg-white/10" />
-          <div className="flex items-center gap-1">
-            <span className="text-sm font-semibold text-accent">{workerTasks.length}</span>
-            <span className="text-xs text-muted-foreground">tasks as worker</span>
-          </div>
-        </div>
+          </span>
+        </button>
+      </DialogTrigger>
 
-        <DialogTrigger asChild>
-          <Button variant="outline" size="sm">
-            <User className="w-4 h-4" />
-          </Button>
-        </DialogTrigger>
-      </div>
-
-      <DialogContent className="brand-card border-2">
+      <DialogContent className="ledger-card border-2">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">
             Wallet Details
@@ -212,17 +201,17 @@ export function AccountPanel() {
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
-          <div className="brand-card p-4 space-y-2">
+          <div className="ledger-card p-4 space-y-2">
             <p className="text-sm text-muted-foreground">Your Address</p>
             <code className="text-sm font-mono break-all">{address}</code>
           </div>
 
-          <div className="brand-card p-4 space-y-2">
+          <div className="ledger-card p-4 space-y-2">
             <p className="text-sm text-muted-foreground">Tasks as Worker</p>
             <p className="text-2xl font-bold text-accent">{workerTasks.length}</p>
           </div>
 
-          <div className="brand-card p-4 space-y-2">
+          <div className="ledger-card p-4 space-y-2">
             <p className="text-sm text-muted-foreground">Network Status</p>
             <div className="flex items-center gap-2">
               <div

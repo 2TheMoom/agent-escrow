@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, CheckCircle2, XCircle, Clock, FileClock, Ban, Scale } from "lucide-react";
+import { Loader2, FileClock } from "lucide-react";
 import { formatEther } from "viem";
 import { useTasks, useAdjudicate, useCancelTask, useAgentEscrowContract } from "@/lib/hooks/useAgentEscrow";
 import { useWallet } from "@/lib/genlayer/wallet";
@@ -10,8 +10,19 @@ import { error } from "@/lib/utils/toast";
 import { AddressDisplay } from "./AddressDisplay";
 import { SubmitDeliverableModal } from "./SubmitDeliverableModal";
 import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
 import type { Task } from "@/lib/contracts/types";
+
+function manifestNumber(id: string): string {
+  return /^\d+$/.test(id) ? `№${id.padStart(4, "0")}` : `№${id}`;
+}
+
+function portOf(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+}
 
 export function TasksTable() {
   const contract = useAgentEscrowContract();
@@ -22,7 +33,7 @@ export function TasksTable() {
 
   const handleAdjudicate = (taskId: string) => {
     if (!address) {
-      error("Please connect your wallet to adjudicate a task");
+      error("Please connect your wallet to inspect a manifest");
       return;
     }
     adjudicate(taskId);
@@ -30,7 +41,7 @@ export function TasksTable() {
 
   const handleCancel = (taskId: string) => {
     if (!address) {
-      error("Please connect your wallet to cancel a task");
+      error("Please connect your wallet to withdraw a bond");
       return;
     }
     cancelTask(taskId);
@@ -38,10 +49,10 @@ export function TasksTable() {
 
   if (isLoading) {
     return (
-      <div className="brand-card p-8 flex items-center justify-center">
+      <div className="ledger-card p-10 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-accent" />
-          <p className="text-sm text-muted-foreground">Loading tasks...</p>
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <p className="eyebrow">Opening the register...</p>
         </div>
       </div>
     );
@@ -49,10 +60,10 @@ export function TasksTable() {
 
   if (!contract) {
     return (
-      <div className="brand-card p-12 text-center">
-        <h3 className="text-xl font-bold">Setup Required</h3>
-        <p className="text-muted-foreground mt-2">
-          Set <code className="bg-muted px-1 py-0.5 rounded text-xs">NEXT_PUBLIC_CONTRACT_ADDRESS</code> in your .env file.
+      <div className="ledger-card p-10 text-center">
+        <h3 className="text-lg font-bold">Setup Required</h3>
+        <p className="text-muted-foreground mt-2 text-sm">
+          Set <code className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs">NEXT_PUBLIC_CONTRACT_ADDRESS</code> in your .env file.
         </p>
       </div>
     );
@@ -60,24 +71,24 @@ export function TasksTable() {
 
   if (isError) {
     return (
-      <div className="brand-card p-8 text-center">
-        <p className="text-destructive">Failed to load tasks. Please try again.</p>
+      <div className="ledger-card p-10 text-center">
+        <p className="text-destructive text-sm">Failed to open the register. Please try again.</p>
       </div>
     );
   }
 
   if (!tasks || tasks.length === 0) {
     return (
-      <div className="brand-card p-12 text-center space-y-3">
-        <FileClock className="w-16 h-16 mx-auto text-muted-foreground opacity-30" />
-        <h3 className="text-xl font-bold">No Tasks Yet</h3>
-        <p className="text-muted-foreground">Be the first to create a data-delivery task!</p>
+      <div className="ledger-card p-12 text-center space-y-2">
+        <FileClock className="w-10 h-10 mx-auto text-muted-foreground opacity-30" />
+        <h3 className="text-lg font-bold">The Register Is Empty</h3>
+        <p className="text-muted-foreground text-sm">File the first manifest above.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div>
       {tasks.map((task) => (
         <TaskRow
           key={task.id}
@@ -95,21 +106,6 @@ export function TasksTable() {
       ))}
     </div>
   );
-}
-
-function StatusBadge({ status }: { status: Task["status"] }) {
-  switch (status) {
-    case "accepted":
-      return <Badge className="bg-green-500/15 text-green-400 border-green-500/30"><CheckCircle2 className="w-3 h-3 mr-1" />Accepted</Badge>;
-    case "rejected":
-      return <Badge className="bg-red-500/15 text-red-400 border-red-500/30"><XCircle className="w-3 h-3 mr-1" />Rejected</Badge>;
-    case "submitted":
-      return <Badge variant="outline" className="text-yellow-400 border-yellow-500/30"><Clock className="w-3 h-3 mr-1" />Submitted</Badge>;
-    case "cancelled":
-      return <Badge variant="outline" className="text-muted-foreground border-white/20"><Ban className="w-3 h-3 mr-1" />Cancelled</Badge>;
-    default:
-      return <Badge variant="outline" className="text-blue-400 border-blue-500/30"><FileClock className="w-3 h-3 mr-1" />Open</Badge>;
-  }
 }
 
 interface TaskRowProps {
@@ -135,6 +131,7 @@ function TaskRow({
   const canSubmit = isConnected && isWorker && !isWalletLoading && task.status === "open";
   const canCancel = isConnected && isRequester && !isWalletLoading && task.status === "open";
   const canAdjudicate = isConnected && !isWalletLoading && task.status === "submitted";
+  const isFinal = task.status === "accepted" || task.status === "rejected" || task.status === "cancelled";
 
   let amountDisplay = "0";
   try {
@@ -144,84 +141,103 @@ function TaskRow({
   }
 
   return (
-    <div className="brand-card brand-card-hover p-4 sm:p-5 animate-fade-in">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-foreground">{task.fact_description}</span>
-            <StatusBadge status={task.status} />
-          </div>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-            <span>Requester: <AddressDisplay address={task.requester} maxLength={10} /></span>
-            <span>Worker: <AddressDisplay address={task.worker} maxLength={10} /></span>
-            <span className="font-semibold text-accent">{amountDisplay} GEN</span>
-          </div>
-          <a href={task.source_url} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground underline break-all">
-            {task.source_url}
-          </a>
+    <div className="manifest-row relative grid grid-cols-[44px_1fr] sm:grid-cols-[64px_1fr_auto] gap-4 sm:gap-5 items-start py-5 border-b border-border/70 last:border-b-0 animate-fade-in">
+      <div className="hidden sm:flex flex-col items-center gap-1.5 pt-0.5">
+        <span className="font-mono text-xs text-muted-foreground">{manifestNumber(task.id)}</span>
+        <span className="w-px flex-1 min-h-[28px] perf-line" />
+      </div>
+      <span className="sm:hidden font-mono text-xs text-muted-foreground">{manifestNumber(task.id)}</span>
+
+      <div className="min-w-0">
+        <h3 className="text-base font-bold font-[family-name:var(--font-display)]">{task.fact_description}</h3>
+        <div className="mt-1.5 font-mono text-xs text-muted-foreground leading-relaxed break-all">
+          PORT <span className="text-foreground">{portOf(task.source_url)}</span>
+          {" · "}FILED BY <span className="text-foreground"><AddressDisplay address={task.requester} maxLength={10} /></span>
+          {" · "}ASSIGNED TO <span className="text-foreground"><AddressDisplay address={task.worker} maxLength={10} /></span>
         </div>
 
-        <div className="flex gap-2 shrink-0">
-          {canSubmit && (
-            <Button onClick={() => setIsSubmitOpen(true)} size="sm" variant="gradient">
-              Submit Deliverable
-            </Button>
-          )}
-          {canCancel && (
-            <Button onClick={() => onCancel(task.id)} disabled={isCancelling} size="sm" variant="outline">
-              {isCancelling ? (<><Loader2 className="w-3 h-3 mr-1 animate-spin" />Cancelling...</>) : "Cancel"}
-            </Button>
-          )}
-          {canAdjudicate && (
-            <Button onClick={() => onAdjudicate(task.id)} disabled={isAdjudicating} size="sm" variant="gradient">
-              {isAdjudicating ? (<><Loader2 className="w-3 h-3 mr-1 animate-spin" />Adjudicating...</>) : (<><Scale className="w-3.5 h-3.5 mr-1" />Adjudicate</>)}
-            </Button>
-          )}
-        </div>
+        {task.status === "submitted" && (
+          <div className="mt-2.5 pl-3 border-l-2 border-border font-mono text-xs text-muted-foreground max-w-[60ch]">
+            <span className="block eyebrow mb-0.5">Declared Value</span>
+            {task.reported_value}
+          </div>
+        )}
+
+        {(task.status === "accepted" || task.status === "rejected") && (
+          <div className="mt-2.5 pl-3 border-l-2 border-border font-mono text-xs text-muted-foreground max-w-[60ch] space-y-1">
+            <div><span className="eyebrow mr-1">Declared Value</span>{task.reported_value}</div>
+            <div><span className="eyebrow mr-1 block">Validator Note</span>&ldquo;{task.verdict_reasoning}&rdquo;</div>
+          </div>
+        )}
+
+        {isAdjudicating && (
+          <div className="mt-2.5 flex items-center gap-2 font-mono text-xs text-muted-foreground">
+            {adjudicatePendingTxHash ? (
+              <>
+                <span>Inspection filed - awaiting validator confirmation...</span>
+                <a href={getTxExplorerUrl(adjudicatePendingTxHash)} target="_blank" rel="noopener noreferrer" className="shrink-0 font-semibold text-primary hover:underline">
+                  View on explorer
+                </a>
+              </>
+            ) : (
+              <span>Filing inspection...</span>
+            )}
+          </div>
+        )}
+
+        {isCancelling && (
+          <div className="mt-2.5 flex items-center gap-2 font-mono text-xs text-muted-foreground">
+            {cancelPendingTxHash ? (
+              <>
+                <span>Withdrawal filed - awaiting confirmation...</span>
+                <a href={getTxExplorerUrl(cancelPendingTxHash)} target="_blank" rel="noopener noreferrer" className="shrink-0 font-semibold text-primary hover:underline">
+                  View on explorer
+                </a>
+              </>
+            ) : (
+              <span>Filing withdrawal...</span>
+            )}
+          </div>
+        )}
       </div>
 
-      {task.status === "submitted" && (
-        <div className="mt-3 pt-3 border-t border-white/5 text-xs text-muted-foreground">
-          Reported value: <span className="font-mono text-foreground">{task.reported_value}</span>
+      <div className={`col-span-2 sm:col-span-1 flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 sm:min-w-[150px] ${isFinal ? "" : "sm:pt-0.5"}`}>
+        <div className="font-mono text-sm tabular">
+          {amountDisplay} <span className="text-muted-foreground text-xs">GEN</span>
         </div>
-      )}
 
-      {(task.status === "accepted" || task.status === "rejected") && (
-        <div className="mt-3 pt-3 border-t border-white/5 text-xs text-muted-foreground space-y-1">
-          <div>Reported value: <span className="font-mono text-foreground">{task.reported_value}</span></div>
-          <div>{task.verdict_reasoning}</div>
-        </div>
-      )}
+        {task.status === "open" && (
+          <span className="font-mono text-[0.68rem] tracking-wider uppercase flex items-center gap-1.5" style={{ color: "var(--amber)" }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--amber)" }} />
+            Awaiting Declaration
+          </span>
+        )}
+        {task.status === "submitted" && (
+          <span className="font-mono text-[0.68rem] tracking-wider uppercase flex items-center gap-1.5" style={{ color: "var(--steel)" }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--steel)" }} />
+            Awaiting Inspection
+          </span>
+        )}
+        {task.status === "accepted" && <span className="ink-stamp text-sm px-3 py-1" style={{ color: "var(--primary)" }}>Cleared</span>}
+        {task.status === "rejected" && <span className="ink-stamp text-sm px-3 py-1" style={{ color: "var(--rust)" }}>Held</span>}
+        {task.status === "cancelled" && <span className="ink-stamp text-sm px-3 py-1 opacity-60" style={{ color: "var(--void)", transform: "rotate(-4deg)" }}>Withdrawn</span>}
 
-      {isAdjudicating && (
-        <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-          {adjudicatePendingTxHash ? (
-            <>
-              <span>Transaction submitted - waiting for validator confirmation...</span>
-              <a href={getTxExplorerUrl(adjudicatePendingTxHash)} target="_blank" rel="noopener noreferrer" className="shrink-0 font-semibold text-accent hover:underline">
-                View on explorer
-              </a>
-            </>
-          ) : (
-            <span>Preparing transaction...</span>
-          )}
-        </div>
-      )}
-
-      {isCancelling && (
-        <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between gap-2 text-xs text-muted-foreground">
-          {cancelPendingTxHash ? (
-            <>
-              <span>Transaction submitted - waiting for confirmation...</span>
-              <a href={getTxExplorerUrl(cancelPendingTxHash)} target="_blank" rel="noopener noreferrer" className="shrink-0 font-semibold text-accent hover:underline">
-                View on explorer
-              </a>
-            </>
-          ) : (
-            <span>Preparing transaction...</span>
-          )}
-        </div>
-      )}
+        {canSubmit && (
+          <Button onClick={() => setIsSubmitOpen(true)} size="sm" variant="gradient">
+            File Declaration
+          </Button>
+        )}
+        {canCancel && (
+          <Button onClick={() => onCancel(task.id)} disabled={isCancelling} size="sm" variant="outline">
+            {isCancelling ? (<><Loader2 className="w-3 h-3 mr-1 animate-spin" />Withdrawing...</>) : "Withdraw Bond"}
+          </Button>
+        )}
+        {canAdjudicate && (
+          <Button onClick={() => onAdjudicate(task.id)} disabled={isAdjudicating} size="sm" variant="gradient">
+            {isAdjudicating ? (<><Loader2 className="w-3 h-3 mr-1 animate-spin" />Inspecting...</>) : "Inspect & Clear"}
+          </Button>
+        )}
+      </div>
 
       {canSubmit && <SubmitDeliverableModal task={task} open={isSubmitOpen} onOpenChange={setIsSubmitOpen} />}
     </div>

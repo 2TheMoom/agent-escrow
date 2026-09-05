@@ -1,11 +1,14 @@
 /**
- * GenLayer Logo Component
- * Per Brand Guidelines 2025
+ * AgentEscrow Logo Component
+ *
+ * "Bonded Seal" mark: a postmark-style ring with radiating ticks and a
+ * checkmark, evoking a customs/notary stamp of clearance - distinct from
+ * GenLayer's own triangular mark.
  *
  * Variants:
- * - "full": Strong Mark + Wordmark (for desktop/larger spaces)
- * - "mark": Strong Mark only (for mobile/compact spaces)
- * - "wordmark": Wordmark only (for specific cases)
+ * - "full": Mark + Wordmark (for desktop/larger spaces)
+ * - "mark": Mark only (for mobile/compact spaces)
+ * - "wordmark": Wordmark only
  */
 
 import React from 'react';
@@ -23,9 +26,11 @@ interface LogoProps {
 
 const sizeMap = {
   sm: { mark: 'w-5 h-5', text: 'text-base' },
-  md: { mark: 'w-6 h-6', text: 'text-xl' },
-  lg: { mark: 'w-8 h-8', text: 'text-2xl' },
+  md: { mark: 'w-7 h-7', text: 'text-xl' },
+  lg: { mark: 'w-9 h-9', text: 'text-2xl' },
 };
+
+const TICK_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
 
 export function Logo({
   variant = 'full',
@@ -36,35 +41,49 @@ export function Logo({
   const colorClass = theme === 'dark' ? 'text-foreground' : 'text-background';
   const { mark: markSize, text: textSize } = sizeMap[size];
 
-  // GenLayer Strong Mark (Triangle/Hands symbol)
-  const StrongMark = () => (
+  const SealMark = () => (
     <svg
-      className={`${markSize} ${colorClass} transition-colors`}
-      viewBox="0 0 97.76 91.93"
+      className={`${markSize} text-primary transition-colors`}
+      viewBox="0 0 100 100"
       xmlns="http://www.w3.org/2000/svg"
-      aria-label="GenLayer Logo"
+      aria-label="AgentEscrow Logo"
     >
+      <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="3" />
+      <circle cx="50" cy="50" r="36" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <g stroke="currentColor" strokeWidth="2">
+        {TICK_ANGLES.map((deg) => {
+          const rad = (deg * Math.PI) / 180;
+          const x1 = 50 + 39 * Math.cos(rad);
+          const y1 = 50 + 39 * Math.sin(rad);
+          const x2 = 50 + 45.5 * Math.cos(rad);
+          const y2 = 50 + 45.5 * Math.sin(rad);
+          return <line key={deg} x1={x1} y1={y1} x2={x2} y2={y2} />;
+        })}
+      </g>
       <path
-        fill="currentColor"
-        d="M44.26 32.35L27.72 67.12L43.29 74.9L0 91.93L44.26 0L44.26 32.35ZM53.5 32.35L70.04 67.12L54.47 74.9L97.76 91.93L53.5 0L53.5 32.35ZM48.64 43.78L58.33 62.94L48.64 67.69L39.47 62.92L48.64 43.78Z"
+        d="M32 51 L44 63 L69 35"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
 
-  // Wordmark (using Space Grotesk from layout)
   const Wordmark = () => (
     <span
       className={`${textSize} font-bold ${colorClass} font-[family-name:var(--font-display)] transition-colors`}
-      style={{ letterSpacing: '-0.02em' }}
+      style={{ letterSpacing: '-0.01em' }}
     >
-      GenLayer
+      AgentEscrow
     </span>
   );
 
   if (variant === 'mark') {
     return (
       <div className={`inline-flex items-center ${className}`}>
-        <StrongMark />
+        <SealMark />
       </div>
     );
   }
@@ -77,16 +96,14 @@ export function Logo({
     );
   }
 
-  // Full logo (default): Strong Mark + Wordmark
   return (
-    <div className={`inline-flex items-center gap-2 ${className}`}>
-      <StrongMark />
+    <div className={`inline-flex items-center gap-2.5 ${className}`}>
+      <SealMark />
       <Wordmark />
     </div>
   );
 }
 
-// Convenience components for common use cases
 export function LogoFull(props: Omit<LogoProps, 'variant'>) {
   return <Logo {...props} variant="full" />;
 }

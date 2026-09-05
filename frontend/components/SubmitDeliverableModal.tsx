@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FileCheck, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useSubmitDeliverable } from "@/lib/hooks/useAgentEscrow";
 import { getTxExplorerUrl } from "@/lib/genlayer/chains";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
 import type { Task } from "@/lib/contracts/types";
 
 interface SubmitDeliverableModalProps {
@@ -52,47 +50,46 @@ export function SubmitDeliverableModal({ task, open, onOpenChange }: SubmitDeliv
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="brand-card border-2 sm:max-w-[450px]">
+      <DialogContent className="ledger-card border sm:max-w-[450px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-            <FileCheck className="w-5 h-5 text-accent" />
-            Submit Deliverable
+          <DialogTitle className="text-xl font-bold font-[family-name:var(--font-display)]">
+            File a Declaration
           </DialogTitle>
           <DialogDescription>
-            Report what you found at {task.source_url} for: {task.fact_description}
+            Declare what you found at {task.source_url} for: {task.fact_description}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 mt-4">
-          <div className="space-y-2">
-            <Label htmlFor="reportedValue">Reported Value</Label>
-            <Input
+        <form onSubmit={handleSubmit} className="space-y-5 mt-4">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="reportedValue" className="eyebrow">Declared Value</label>
+            <input
               id="reportedValue"
               type="text"
               placeholder="e.g. 3421.50"
               value={reportedValue}
               onChange={(e) => { setReportedValue(e.target.value); setFormError(""); }}
-              className={formError ? "border-destructive" : ""}
+              className={`font-mono text-sm bg-transparent border-0 border-b outline-none py-1.5 ${formError ? "border-destructive" : "border-dotted border-muted-foreground focus:border-primary"}`}
             />
             <p className="text-xs text-muted-foreground">
-              Validators will independently re-fetch the source and compare - report the
-              actual value, not a guess. This can only be submitted once.
+              Validators will independently re-fetch the source and compare - declare the
+              actual value, not a guess. This can only be filed once.
             </p>
             {formError && <p className="text-xs text-destructive">{formError}</p>}
           </div>
 
-          <div className="space-y-2 pt-2">
+          <div className="space-y-3 pt-1">
             {isSubmitting && (
-              <div className="flex items-center justify-between gap-2 rounded-md border border-white/10 bg-muted/10 px-3 py-2 text-xs text-muted-foreground">
+              <div className="flex items-center justify-between gap-2 font-mono text-xs text-muted-foreground">
                 {pendingTxHash ? (
                   <>
-                    <span>Transaction submitted - waiting for confirmation...</span>
-                    <a href={getTxExplorerUrl(pendingTxHash)} target="_blank" rel="noopener noreferrer" className="shrink-0 font-semibold text-accent hover:underline">
+                    <span>Declaration filed - awaiting confirmation...</span>
+                    <a href={getTxExplorerUrl(pendingTxHash)} target="_blank" rel="noopener noreferrer" className="shrink-0 font-semibold text-primary hover:underline">
                       View on explorer
                     </a>
                   </>
                 ) : (
-                  <span>Preparing transaction...</span>
+                  <span>Filing declaration...</span>
                 )}
               </div>
             )}
@@ -101,7 +98,7 @@ export function SubmitDeliverableModal({ task, open, onOpenChange }: SubmitDeliv
                 Cancel
               </Button>
               <Button type="submit" variant="gradient" className="flex-1" disabled={isSubmitting}>
-                {isSubmitting ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Submitting...</>) : "Submit"}
+                {isSubmitting ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Filing...</>) : "File Declaration"}
               </Button>
             </div>
           </div>
