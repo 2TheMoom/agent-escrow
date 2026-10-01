@@ -32,7 +32,7 @@ enough that appeal complexity isn't worth it here.
 ## Live deployment
 Deployed and verified on **GenLayer Bradbury Testnet** (chain ID 4221):
 - **Frontend:** https://agent-escrow-frontend.vercel.app
-- **Contract:** [`0x6a97D216888220D1B140e466f8Ad3A2586eD0DCC`](https://explorer-bradbury.genlayer.com/address/0x6a97D216888220D1B140e466f8Ad3A2586eD0DCC)
+- **Contract:** [`0xb173087D965550b82c727Fd22852B766653f7ED4`](https://explorer-bradbury.genlayer.com/address/0xb173087D965550b82c727Fd22852B766653f7ED4)
 - Verified via 16 passing direct-mode tests (`pytest tests/direct/`), covering
   task creation, the allowlist check, cancellation guards, and both the
   accept and reject adjudication paths.
@@ -44,27 +44,29 @@ Deployed and verified on **GenLayer Bradbury Testnet** (chain ID 4221):
   value of 2477.66, accounting for normal price fluctuation."* - proving the
   judgment logic works exactly as designed, not just that it compiles.
 
-### Known limitation: payouts don't currently land on Bradbury
-The verdict logic is correct and verified (see above), but the actual value
-transfer - `gl.get_contract_at(worker_or_requester).emit_transfer(value=...)`
-- does not currently deliver funds on Bradbury. This is a confirmed GenLayer
-platform bug, not a flaw in this contract's design: see
-[genlayerlabs/genvm-manager#20](https://github.com/genlayerlabs/genvm-manager/issues/20),
-where I contributed a minimal, zero-conditional-logic repro isolating the
-issue to `emit_transfer` itself. On Bradbury specifically, the payout
-transaction comes back `FINISHED_WITH_ERROR` with all 5 validators voting
-`DISAGREE` with each other in a call with no possible business-logic branch
-to disagree over - a sibling report on Asimov shows the same underlying
-failure with a different symptom (a silent no-op instead of an error). The
-likely root cause, per that thread, is in the closed-source validator node
-binary's on-chain message-dispatch path, not in GenVM itself or in contract
-code following GenLayer's own documented pattern (this contract's payout
-code is structurally identical to GenLayer Studio's own `faucet.py` example).
+### Root-caused and fixed (2026-10-01): payouts now use the correct EOA primitive
+Payouts previously used `gl.get_contract_at(worker_or_requester)
+.emit_transfer(value=...)` - an internal Intelligent-Contract dispatch
+message. Workers and requesters are EOAs, and for an address holding no
+contract code that message is resolved by a handler that doesn't reliably
+reach validator majority: the payout can leave the contract and be credited
+to nobody, intermittently. This is what was previously misattributed to
+[genlayerlabs/genvm-manager#20](https://github.com/genlayerlabs/genvm-manager/issues/20)
+as an unconfirmed platform bug - the same pattern turned up identically
+across this account's Waypoint, Tote, and Salvage Arbiter projects, all
+flagged independently and all root-caused back to the same wrong primitive,
+not a platform defect. The actual fix: `gl.evm.contract_interface` (a
+`Payee` class with empty `View`/`Write` inner classes, called as
+`Payee(address).emit_transfer(value=amount)`) emits a genuine external
+chain-layer value transfer instead - the SDK's documented primitive for
+paying an EOA. `cancel_task()` and `adjudicate()` both now transfer before
+flipping status, so a reverted payout can never permanently strand a task
+as paid-but-unpaid. 16 direct-mode tests still pass, lint clean.
 
-Every other part of the flow - escrow creation, the neutral-source
-allowlist, cancellation, deliverable submission, and the LLM-adjudicated
-verdict itself, including the actual funds-transfer *code path executing
-without error up to the point of dispatch* - works and is verified above.
+Every part of the flow - escrow creation, the neutral-source allowlist,
+cancellation, deliverable submission, and the LLM-adjudicated verdict - was
+already verified live above; this fix addresses the one piece that wasn't:
+reliable delivery of the actual payout.
 
 ## What's included
 - `contracts/agent_escrow.py` — the AgentEscrow Intelligent Contract

@@ -50,6 +50,27 @@ def _is_allowed_source(source_url: str) -> bool:
     return any(domain in url for domain in ALLOWED_SOURCE_DOMAINS)
 
 
+@gl.evm.contract_interface
+class Payee:
+    """Declared recipient of a value transfer that lives on the chain
+    layer. Requesters and workers are EOAs; paying an EOA is an
+    *external* message (IC -> chain layer), a different primitive from
+    the internal IC -> IC message gl.get_contract_at() produces - the
+    latter is resolved by the GenVM contract dispatcher and, for an
+    address holding no Intelligent Contract, is settled by a handler
+    that never reaches validator majority: the payout leaves this
+    contract and is credited to nobody. gl.evm.contract_interface emits
+    a pure value transfer instead. The empty View/Write classes are
+    deliberate - no method is ever called on the recipient, only value
+    is moved."""
+
+    class View:
+        pass
+
+    class Write:
+        pass
+
+
 @allow_storage
 @dataclass
 class Task:
@@ -129,8 +150,11 @@ class AgentEscrow(gl.Contract):
         if task.status != "open":
             raise gl.vm.UserError("Task already has a submitted report")
 
+        # Transfer before flipping status: if the transfer reverts, the
+        # whole call reverts with it, so a failed refund never
+        # permanently strands the task in a paid-but-unpaid state.
+        Payee(task.requester).emit_transfer(value=task.amount)
         task.status = "cancelled"
-        gl.get_contract_at(task.requester).emit_transfer(value=task.amount)
 
     @gl.public.write
     def submit_deliverable(self, task_id: str, reported_value: str) -> None:
@@ -211,11 +235,11 @@ This result should be perfectly parsable by a JSON parser without errors.
         task.verdict_reasoning = str(verdict.get("reasoning", ""))
 
         if verdict_value == "accept":
+            Payee(task.worker).emit_transfer(value=task.amount)
             task.status = "accepted"
-            gl.get_contract_at(task.worker).emit_transfer(value=task.amount)
         else:
+            Payee(task.requester).emit_transfer(value=task.amount)
             task.status = "rejected"
-            gl.get_contract_at(task.requester).emit_transfer(value=task.amount)
 
     @gl.public.view
     def get_task(self, task_id: str) -> Task:
